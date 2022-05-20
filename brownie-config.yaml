@@ -23,6 +23,7 @@ networks:
 
 providers:
   infura: ${WEB3_INFURA_PROJECT_ID}
+dev_deployment_artifacts: true
 
 wallets:
   from_key: ${PRIVATE_KEY}
