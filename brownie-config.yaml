@@ -1,0 +1,28 @@
+dependencies:
+  - OpenZeppelin/openzeppelin-contracts@4.6.0
+compiler:
+  solc:
+    remappings:
+      - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.6.0'
+dotenv: .env
+networks:
+  development:
+    verify: False
+  ganache:
+    verify: False
+  kovan:
+    verify: True
+    weth_token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
+    fau_token: '0xFab46E002BbF0b4509813474841E0716E6730136'
+    uni_token: '0xaFF4481D10270F50f203E0763e2597776068CBc5'
+    aud_token: '0x022E292b44B5a146F2e8ee36Ff44D3dd863C915c'
+    dai_usd_price_feed: '0x777A68032a88E5A84678A77Af2CD65A7b3c0775a'
+    eth_usd_price_feed: '0x9326BFA02ADD2366b30bacB125260Af641031331'
+    uni_usd_price_feed: '0xDA5904BdBfB4EF12a3955aEcA103F51dc87c7C39'
+    aud_usd_price_feed: '0x5813A90f826e16dB392abd2aF7966313fc1fd5B8'
+
+providers:
+  infura: ${WEB3_INFURA_PROJECT_ID}
+
+wallets:
+  from_key: ${PRIVATE_KEY}
