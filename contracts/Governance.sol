@@ -18,7 +18,7 @@ contract Governance is
 {
     constructor(IVotes _token, TimelockController _timelock)
         Governor("Truth Faction")
-        GovernorSettings(0, 5, 0)
+        GovernorSettings(0, 7, 0)
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
         GovernorTimelockControl(_timelock)

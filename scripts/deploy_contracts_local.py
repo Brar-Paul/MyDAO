@@ -1,3 +1,4 @@
+from turtle import end_fill
 from brownie import Token, Governance, Timelock, Treasury, accounts, config
 from web3 import Web3
 
@@ -55,7 +56,7 @@ def deploy():
     print("Proposer and Executor roles granted!")
 
     # Deploy Treasury
-    funds = Web3.toWei(25, "ether")
+    funds = Web3.toWei(50, "ether")
     treasury = Treasury.deploy(EXECUTOR, {"from": EXECUTOR})
     treasury_funding = token.transfer(treasury, funds, {"from": EXECUTOR})
     treasury_funding.wait(1)
@@ -67,9 +68,9 @@ def deploy():
 # Simulate creating proposal to release funds from treasury, voting, and queing/executing
 
 
-def create_proposal(token, governance, timelock, treasury):
+def propose(token, governance, timelock, treasury):
     # delegate voters
-    # @dev: clean this up with a loop
+    # NOTICE: Clean this up with a loop later
     delegate_tx = token.delegate(VOTER1, {"from": VOTER1})
     delegate_tx.wait(1)
     delegate_tx = token.delegate(VOTER2, {"from": VOTER2})
@@ -84,26 +85,22 @@ def create_proposal(token, governance, timelock, treasury):
     delegate_tx.wait(1)
     delegate_tx = token.delegate(VOTER7, {"from": VOTER7})
     delegate_tx.wait(1)
-
     # check treasury balance and release state of funds
-    w3_treasury = w3.eth.contract(address=treasury.address, abi=treasury.abi)
     is_released = treasury.isReleased()
     print(f"Fund's released? {is_released}")
-    balance = w3.eth.get_balance(treasury.address)
+    balance = token.balanceOf(treasury)
     print(balance)
     print(f"Treasury Balance: {Web3.fromWei(balance, 'ether')} ETH")
 
-    # Create proposal
-    encoded = w3_treasury.encodeABI("releaseFunds")
+    # create proposal
+    w3_treasury = w3.eth.contract(address=treasury.address, abi=treasury.abi)
+    encoded_function = w3_treasury.encodeABI("releaseFunds")
     propose_tx = governance.propose(
-        [treasury.address],
-        [0],
-        [encoded],
-        "Empty Treasury",
+        [treasury.address], [0], [encoded_function], "Empty Treasury"
     )
     propose_tx.wait(1)
-    receipt = w3.eth.get_transaction_receipt(propose_tx).logs
-    proposal_id = receipt[0]
+    receipt = propose_tx.events
+    proposal_id = receipt["ProposalCreated"]["proposalId"]
     print(f"Propsal submitted, id: {proposal_id}")
 
     # Proposal/Snapshot info
@@ -123,17 +120,17 @@ def create_proposal(token, governance, timelock, treasury):
     print("Casting votes...")
     vote = governance.castVote(proposal_id, 1, {"from": VOTER1})
     vote.wait(1)
-    vote = governance.castVote(proposal_id, 2, {"from": VOTER2})
+    vote = governance.castVote(proposal_id, 1, {"from": VOTER2})
     vote.wait(1)
-    vote = governance.castVote(proposal_id, 2, {"from": VOTER3})
+    vote = governance.castVote(proposal_id, 1, {"from": VOTER3})
     vote.wait(1)
     vote = governance.castVote(proposal_id, 1, {"from": VOTER4})
     vote.wait(1)
     vote = governance.castVote(proposal_id, 1, {"from": VOTER5})
     vote.wait(1)
-    vote = governance.castVote(proposal_id, 0, {"from": VOTER6})
+    vote = governance.castVote(proposal_id, 1, {"from": VOTER6})
     vote.wait(1)
-    vote = governance.castVote(proposal_id, 0, {"from": VOTER7})
+    vote = governance.castVote(proposal_id, 1, {"from": VOTER7})
     vote.wait(1)
 
     # Results
@@ -147,24 +144,28 @@ def create_proposal(token, governance, timelock, treasury):
     proposal_state = governance.state(proposal_id)
     print(f"Proposal state: {proposal_state}")
 
+    blocknumber = w3.eth.get_block_number()
+    print(f"Current block number: {blocknumber}")
+
     # Queue proposal
-    description_hash = Web3.keccak("Empty Treasury")
+    description_hash = Web3.keccak(text="Empty Treasury")
     queue_tx = governance.queue(
         [treasury.address],
         [0],
-        [encoded],
+        [encoded_function],
         description_hash,
         {"from": EXECUTOR},
     )
     queue_tx.wait(1)
+    queue_tx.wait(1)
+    queue_tx.wait(1)
     proposal_state = governance.state(proposal_id)
     print(f"Proposal state: {proposal_state}")
-
     # Execute and confirm
     execute_tx = governance.execute(
         [treasury.address],
         [0],
-        [encoded],
+        [encoded_function],
         description_hash,
         {"from": EXECUTOR},
     )
@@ -178,4 +179,4 @@ def create_proposal(token, governance, timelock, treasury):
 
 def main():
     token, governance, timelock, treasury = deploy()
-    create_proposal(token, governance, timelock, treasury)
+    propose(token, governance, timelock, treasury)
